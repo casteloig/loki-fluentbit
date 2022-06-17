@@ -287,14 +287,16 @@ config:
         HTTP_Port {{ .Values.metricsPort }}
         Health_Check On
 
+
   ## https://docs.fluentbit.io/manual/pipeline/inputs
   inputs: |
     [INPUT]
         Name tail
-        Tag *
+        Tag kube.*
         Path /var/log/containers/*.log
-        Parser docker
         Mem_Buf_Limit 5MB
+        Refresh_Interval 5
+
 
   ## https://docs.fluentbit.io/manual/pipeline/filters
   # filters: |
@@ -310,19 +312,21 @@ config:
   outputs: |
     [OUTPUT]
         Name loki
-        Match *
+        Match kube.*
         Host loki-write
         Retry_Limit False
+        storage.total_limit_size 50M
 
-  customParsers: |
-    [PARSER]
-        Name docker
-        Format json
-        Time_Keep On
-        Time_Key time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
+  # customParsers: |
+  #   [PARSER]
+  #       Name docker
+  #       Format json
+  #       Time_Keep On
+  #       Time_Key time
+  #       Time_Format %Y-%m-%dT%H:%M:%S.%L
 
   # ## https://docs.fluentbit.io/manual/pipeline/parsers
+  
   # customParsers: |
   #   [PARSER]
   #       Name docker_no_time

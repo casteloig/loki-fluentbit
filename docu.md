@@ -72,10 +72,27 @@ At a low level both are just an array of bytes, but the Structured message defin
 ### Buffering
 When FluentBit processes data, it uses the system memory (heap) as a primary and temporary place to store the record logs before they get delivered, in this private memory area the records are processed.
 
-Buffering refers to the ability to store the records somewhere, and while they are processed and delivered, still be able to store more. Buffering in memory is the fastest mechanism, but there are certain scenarios where it requires special strategies to deal with backpressure, data safety or reduce memory consumption by the service in constrained environments.
+Buffering refers to the ability to store the records somewhere, and while they are processed and delivered, still be able to store more. Buffering in memory is the fastest mechanism, but there are certain scenarios where it requires special strategies to deal with **backpressure**, data safety or reduce memory consumption by the service in constrained environments.
 
-> Network failures or latency on third party service is pretty common, and on scenarios where we cannot deliver data fast enough as we receive new data to process, we likely will face backpressure.
+> Network failures or latency on third party service is pretty common, and on scenarios where we cannot deliver data fast enough as we receive new data to process, we likely will face **backpressure**.
 
 Fluent Bit as buffering strategies go, offers a primary buffering mechanism in memory and an optional secondary one using the file system. With this hybrid solution you can accomodate any use case safely and keep a high performance while processing your data.
 
-Both mechanisms are not mutally exclusive and when the data is ready to be processed or delivered it will always be in memory, while other data in the queue might be in the file system until is ready to be processed and moved up to memory.
+#### Chunks, Memory, Filesystem and Backpressure
+
+1. **Chunks**: when an input plugin (source) emits records, the engine groups the records together in a Chunk. A Chunk size usually is around 2MB. By configuration, the engine decides where to place this Chunk, the default is that all chunks are created only in memoryñ
+
+2. **Buffering in Memory**: if memory is the only mechanism  set for the input plugin, it will just store data as much as it can there (memory). This is the fastest mechanism with the least system overhead.
+
+    In a high load environment with backpressure the risks of having high memory usage is the change of getting killed by the Kernel (OOM Killer). A workaround scenario is to limit the amount of memory in records that an input plugin can register, this configuration property is called `mem_buf_limit`. If a plugin has enqueued more data than it alows, it won't be able to ingest more until that data can be delivered or flushed properly.
+
+    In this input uses more than `mem_buf_limit` you will get a warning like this in the Fluent Bit logs: `input] tcp.1 paused (mem buf overlimit).
+
+3. **Filesystem to rescue**
+When the filesystem buffering is enabled, the behavior of the engine is different, upon Chunk creation, it stores the content in memory but also it maps a copy on disk (through mmap). This Chunk is active in memory and backed up in disk is called to be `up` which means that "the chunk content is up in memory".
+
+Fluent-bit controls the number of Chunks that are `up` in memory. By default, the engine allows to have 128 Chunk s`up` in memory in total, this value is controlled by `storage.max_chunks_up`. Any Chunks in a `down` state are only in the filesystem and won't be `up` in memory unless is ready to be delivered.
+
+If the input plugin has enabled `mem_buf_limit` and `storage.type` as filesystem, when reaching the `mem_buf_limit` threshold, instead of the plugin being paused, all new data will go to Chunks that are `down` in the filesystem. This allows to control the memory usage by the service but also providing a a guarantee that the service won't lose any data.
+
+4. **Backpressure**: the new configuration property for output plugins called `storage.total_limit_size` limits the number of Chunks that exist in the file system for a certain logical output destination. If one of destinations reaches the `storage.total_limit_size`, the oldest Chunk from its queue for that logical output destination will be discarded.
