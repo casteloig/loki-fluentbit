@@ -27,22 +27,6 @@ replicas: 1
 ## Create a headless service for the deployment
 headlessService: false
 
-## Create HorizontalPodAutoscaler object for deployment type
-#
-autoscaling:
-  enabled: false
-#   minReplicas: 1
-#   maxReplicas: 10
-#   metrics:
-#   - type: Resource
-#     resource:
-#       name: cpu
-#       targetAverageUtilization: 60
-#   - type: Resource
-#     resource:
-#       name: memory
-#       targetAverageUtilization: 60
-
 ## See `kubectl explain poddisruptionbudget.spec` for more
 ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
 podDisruptionBudget: {}
@@ -102,37 +86,14 @@ securityContext:
 containerSecurityContext:
   {}
 
-# Extra configmaps to mount in grafana pods
-# Values are templated.
-extraConfigmapMounts: []
-  # - name: certs-configmap
-  #   mountPath: /etc/grafana/ssl/
-  #   subPath: certificates.crt # (optional)
-  #   configMap: certs-configmap
-  #   readOnly: true
-
-
-extraEmptyDirMounts: []
-  # - name: provisioning-notifiers
-  #   mountPath: /etc/grafana/provisioning/notifiers
-
-
 # Apply extra labels to common labels.
 extraLabels: {}
-
-## Assign a PriorityClassName to pods if set
-# priorityClassName:
 
 downloadDashboardsImage:
   repository: curlimages/curl
   tag: 7.73.0
   sha: ""
   pullPolicy: IfNotPresent
-
-downloadDashboards:
-  env: {}
-  envFromSecret: ""
-  resources: {}
 
 ## Pod Annotations
 # podAnnotations: {}
@@ -158,70 +119,6 @@ service:
   annotations: {}
   labels: {}
   portName: service
-
-serviceMonitor:
-  ## If true, a ServiceMonitor CRD is created for a prometheus operator
-  ## https://github.com/coreos/prometheus-operator
-  ##
-  enabled: false
-  path: /metrics
-  #  namespace: monitoring  (defaults to use the namespace this chart is deployed to)
-  labels: {}
-  interval: 1m
-  scheme: http
-  tlsConfig: {}
-  scrapeTimeout: 30s
-  relabelings: []
-
-extraExposePorts: []
- # - name: keycloak
- #   port: 8080
- #   targetPort: 8080
- #   type: ClusterIP
-
-# overrides pod.spec.hostAliases in the grafana deployment's pods
-hostAliases: []
-  # - ip: "1.2.3.4"
-  #   hostnames:
-  #     - "my.host.com"
-
-ingress:
-  enabled: false
-  # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-  # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-  # ingressClassName: nginx
-  # Values can be templated
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  labels: {}
-  path: /
-
-  # pathType is only for k8s >= 1.1=
-  pathType: Prefix
-
-  hosts:
-    - chart-example.local
-  ## Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
-  extraPaths: []
-  # - path: /*
-  #   backend:
-  #     serviceName: ssl-redirect
-  #     servicePort: use-annotation
-  ## Or for k8s > 1.19
-  # - path: /*
-  #   pathType: Prefix
-  #   backend:
-  #     service:
-  #       name: ssl-redirect
-  #       port:
-  #         name: use-annotation
-
-
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 resources: {}
 #  limits:
@@ -250,24 +147,6 @@ affinity: {}
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
 ##
 extraInitContainers: []
-
-## Enable an Specify container in extraContainers. This is meant to allow adding an authentication proxy to a grafana pod
-extraContainers: ""
-# extraContainers: |
-# - name: proxy
-#   image: quay.io/gambol99/keycloak-proxy:latest
-#   args:
-#   - -provider=github
-#   - -client-id=
-#   - -client-secret=
-#   - -github-org=<ORG_NAME>
-#   - -email-domain=*
-#   - -cookie-secret=
-#   - -http-address=http://0.0.0.0:4181
-#   - -upstream-url=http://127.0.0.1:3000
-#   ports:
-#     - name: proxy-web
-#       containerPort: 4181
 
 ## Volumes that can be used in init containers that will not be mounted to deployment pods
 extraContainerVolumes: []
@@ -610,28 +489,6 @@ grafana.ini:
   #   allow_sign_up: true
   #   config_file: /etc/grafana/ldap.toml
 
-## Grafana's LDAP configuration
-## Templated by the template in _helpers.tpl
-## NOTE: To enable the grafana.ini must be configured with auth.ldap.enabled
-## ref: http://docs.grafana.org/installation/configuration/#auth-ldap
-## ref: http://docs.grafana.org/installation/ldap/#configuration
-ldap:
-  enabled: false
-  # `existingSecret` is a reference to an existing secret containing the ldap configuration
-  # for Grafana in a key `ldap-toml`.
-  existingSecret: ""
-  # `config` is the content of `ldap.toml` that will be stored in the created secret
-  config: ""
-  # config: |-
-  #   verbose_logging = true
-
-  #   [[servers]]
-  #   host = "my-ldap-server"
-  #   port = 636
-  #   use_ssl = true
-  #   start_tls = false
-  #   ssl_skip_verify = false
-  #   bind_dn = "uid=%s,ou=users,dc=myorg,dc=com"
 
 ## Grafana's SMTP configuration
 ## NOTE: To enable, grafana.ini must be configured with smtp.enabled
@@ -853,32 +710,6 @@ imageRenderer:
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   ##
   affinity: {}
-
-networkPolicy:
-  ## @param networkPolicy.enabled Enable creation of NetworkPolicy resources. Only Ingress traffic is filtered for now.
-  ##
-  enabled: false
-  ## @param networkPolicy.allowExternal Don't require client label for connections
-  ## The Policy model to apply. When set to false, only pods with the correct
-  ## client label will have network access to  grafana port defined.
-  ## When true, grafana will accept connections from any source
-  ## (with the correct destination port).
-  ##
-  allowExternal: true
-  ## @param networkPolicy.explicitNamespacesSelector A Kubernetes LabelSelector to explicitly select namespaces from which traffic could be allowed
-  ## If explicitNamespacesSelector is missing or set to {}, only client Pods that are in the networkPolicy's namespace
-  ## and that match other criteria, the ones that have the good label, can reach the grafana.
-  ## But sometimes, we want the grafana to be accessible to clients from other namespaces, in this case, we can use this
-  ## LabelSelector to select these namespaces, note that the networkPolicy's namespace should also be explicitly added.
-  ##
-  ## Example:
-  ## explicitNamespacesSelector:
-  ##   matchLabels:
-  ##     role: frontend
-  ##   matchExpressions:
-  ##    - {key: role, operator: In, values: [frontend]}
-  ##
-  explicitNamespacesSelector: {}
 
 # Enable backward compatibility of kubernetes where version below 1.13 doesn't have the enableServiceLinks option
 enableKubeBackwardCompatibility: false

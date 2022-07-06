@@ -1,0 +1,21 @@
+tbAGxuNuyTsR9I34mAuzfnTCwXEAqB2of09W8e2U
+
+
+grafana.monitoring.svc.cluster.local
+
+kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+export POD_NAME=$(kubectl get pods --namespace monitoring -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana" -o jsonpath="{.items[0].metadata.name}")
+kubectl --namespace monitoring port-forward $POD_NAME 3000
+
+
+http://loki-gateway:80/
+
+
+https://github.com/grafana/helm-charts/issues/1111
+
+
+20003056
+20001075
+
+https://rubular.com/r/FnPjaRsyzWC64x

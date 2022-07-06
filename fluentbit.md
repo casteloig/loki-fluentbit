@@ -1,7 +1,7 @@
 # Fluentbit
 
 ## Pipeline
-![fluentbit.svg](pipeline.svg)
+![fluentbit.svg](images/fluentbit/pipeline.svg)
 ### Event or Record
 Every incoming piece of data that belongs to a log or a metric that is retrieved by FluentBit is considered an Event or a Record.
 
