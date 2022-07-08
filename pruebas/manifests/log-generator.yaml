@@ -5,7 +5,7 @@ metadata:
   labels:
     app: log-generator
 spec:
-  replicas: 7
+  replicas: 10
   selector:
     matchLabels:
       app: log-generator

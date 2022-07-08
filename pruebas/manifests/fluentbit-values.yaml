@@ -139,9 +139,8 @@ config:
     [SERVICE]
         Flush {{ .Values.flush }}
         Log_Level {{ .Values.logLevel }}
-        Daemon Off
-        Parsers_File parsers.conf
         Parsers_File custom_parsers.conf
+        Daemon Off
         HTTP_Server On
         HTTP_Listen 0.0.0.0
         HTTP_Port {{ .Values.metricsPort }}
@@ -158,9 +157,9 @@ config:
         Name tail
         Tag kube.*
         Path /var/log/containers/*.log
-        Mem_Buf_Limit 50MB
-        Buffer_Chunk_Size 256KB
-        Buffer_Max_Size   512KB
+        Mem_Buf_Limit 8MB
+        Buffer_Chunk_Size 150KB
+        Buffer_Max_Size   150KB
         DB /var/log/flb_kube.db
         Skip_Long_lines On
         Refresh_Interval 30
@@ -170,12 +169,13 @@ config:
   # parsers: |
   #   [PARSER]
   #       Name    kube-custom
+  #       Match   kube.*
   #       Format  regex
   #       Regex   (?<tag>[^.]+)?\.?(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<docker_id>[a-z0-9]{64})\.log$
 
 
 
-  ## https://docs.fluentbit.io/manual/pipeline/filters
+  # ## https://docs.fluentbit.io/manual/pipeline/filters
   # filters: |
   #   [FILTER]
   #       Name kubernetes
@@ -194,25 +194,25 @@ config:
         Labels job=fluentbit
         Retry_Limit False
         storage.total_limit_size 50M
-
-  # outputs: |
-  #   [OUTPUT]
-  #       Name loki
-  #       Match kube.*
-  #       Host loki-write
-  #       Retry_Limit False
-  #       storage.total_limit_size 50M
-
-  customParsers: |
-      [PARSER]
-        Name    fluentbit-custom
-        Format  regex
-        Regex   (?<timebad>[^ ]*) (?<std>[^ ]*) (?<idkxd>[^ ]*) \[(?<timestamp>[^\]]*)] (?<level>[^ ]*) (?<rest>[^"]*)
+      
 
 
   ## https://docs.fluentbit.io/manual/pipeline/parsers
   
-  # customParsers: |
+  customParsers: |
+    [PARSER]
+        Name    kube-customs
+        Match   kube.*
+        Format  regex
+        Regex   (?<tag>[^.]+)?\.?(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<docker_id>[a-z0-9]{64})\.log$
+
+    [PARSER]
+        Name   json
+        Format json
+        Time_Key time
+        Time_Format %d/%b/%Y:%H:%M:%S %z
+
+
   #   [PARSER]
   #       Name docker_no_time
   #       Format json
@@ -264,4 +264,4 @@ args: []
 
 command: []
 
-logLevel: debug
+logLevel: info
