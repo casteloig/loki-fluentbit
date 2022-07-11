@@ -156,6 +156,7 @@ config:
     [INPUT]
         Name tail
         Tag kube.*
+        Parser cri
         Path /var/log/containers/*.log
         Mem_Buf_Limit 8MB
         Buffer_Chunk_Size 150KB
