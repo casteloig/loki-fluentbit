@@ -63,7 +63,7 @@ loki:
     {{- if .Values.enterprise.enabled}}
     {{- tpl .Values.enterprise.config . }}
     {{- else }}
-    auth_enabled: {{ .Values.loki.authEnabled }}
+    auth_enabled: {{ .Values.loki.auth_enabled }}
     {{- end }}
 
     server:
@@ -117,12 +117,12 @@ loki:
     {{- end -}}
 
   # Should authentication be enabled
-  authEnabled: false
+  auth_enabled: true
 
   # -- Check https://grafana.com/docs/loki/latest/configuration/#common_config for more info on how to provide a common configuration
   commonConfig:
     path_prefix: /var/loki
-    replication_factor: 2
+    replication_factor: 3
 
   storage:
     bucketNames:
@@ -130,6 +130,18 @@ loki:
       ruler: ruler
       admin: admin
     type: local
+    # s3:
+    #   s3: null
+    #   endpoint: https://amazonaws.com
+    #   region: null
+    #   secretAccessKey: supersecret
+    #   accessKeyId: accesskey
+    #   s3ForcePathStyle: false
+    #   insecure: false
+    # gcs:
+    #   chunkBufferSize: 0
+    #   requestTimeout: "0s"
+    #   enableHttp2: true
     local:
       chunks_directory: /var/loki/chunks
       rules_directory: /var/loki/rules
@@ -160,10 +172,87 @@ rbac:
   # -- For OpenShift set pspEnabled to 'false' and sccEnabled to 'true' to use the SecurityContextConstraints.
   sccEnabled: false
 
+# Monitoring section determines which monitoring features to enable
+monitoring:
+  # Dashboards for monitoring Loki
+  dashboards:
+    # -- If enabled, create configmap with dashboards for monitoring Loki
+    enabled: false
+    # -- Alternative namespace to create dashboards config map in
+    namespace: null
+
+  # ServiceMonitor configuration
+  serviceMonitor:
+    # -- If enabled, ServiceMonitor resources for Prometheus Operator are created
+    enabled: false
+    # -- Alternative namespace for ServiceMonitor resources
+    namespace: null
+    # -- Namespace selector for ServiceMonitor resources
+    namespaceSelector: {}
+    # -- ServiceMonitor annotations
+    annotations: {}
+    # -- Additional ServiceMonitor labels
+    labels: {}
+    # -- ServiceMonitor scrape interval
+    interval: null
+    # -- ServiceMonitor scrape timeout in Go duration format (e.g. 15s)
+    scrapeTimeout: null
+    # -- ServiceMonitor relabel configs to apply to samples before scraping
+    # https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    relabelings: []
+    # -- ServiceMonitor will use http by default, but you can pick https as well
+    scheme: http
+    # -- ServiceMonitor will use these tlsConfig settings to make the health check requests
+    tlsConfig: null
+
+  # Self monitoring determines whether Loki should scrape it's own logs.
+  # This feature currently relies on the Grafana Agent Operator being installed,
+  # which is installed by default using the grafana-agent-operator sub-chart.
+  # It will create custom resources for GrafanaAgent, LogsInstance, and PodLogs to configure
+  # scrape configs to scrape it's own logs with the labels expected by the included dashboards.
+  selfMonitoring:
+    enabled: true
+
+    # Grafana Agent configuration
+    grafanaAgent:
+      # -- Controls whether to install the Grafana Agent Operator and its CRDs.
+      # Note that helm will not install CRDs if this flag is enabled during an upgrade.
+      # In that case install the CRDs manually from https://github.com/grafana/agent/tree/main/production/operator/crds
+      installOperator: true
+      # -- Alternative namespace for Grafana Agent resources
+      namespace: null
+      # -- Grafana Agent annotations
+      annotations: {}
+      # -- Additional Grafana Agent labels
+      labels: {}
+      # -- Enable the config read api on port 8080 of the agent
+      enableConfigReadAPI: false
+
+    # PodLogs configuration
+    podLogs:
+      # -- Alternative namespace for PodLogs resources
+      namespace: null
+      # -- PodLogs annotations
+      annotations: {}
+      # -- Additional PodLogs labels
+      labels: {}
+      # -- PodLogs relabel configs to apply to samples before scraping
+      # https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      relabelings: []
+
+    # LogsInstance configuration
+    logsInstance:
+      # -- Alternative namespace for LogsInstance resources
+      namespace: null
+      # -- LogsInstance annotations
+      annotations: {}
+      # -- Additional LogsInstance labels
+      labels: {}
+
 # Configuration for the write
 write:
   # -- Number of replicas for the write
-  replicas: 2
+  replicas: 1
   image:
     # -- The Docker registry for the write image. Overrides `loki.image.registry`
     registry: null
@@ -226,7 +315,7 @@ read:
     # -- Enable autoscaling for the read, this is only used if `queryIndex.enabled: true`
     enabled: false
     # -- Minimum autoscaling replicas for the read
-    minReplicas: 2
+    minReplicas: 1
     # -- Maximum autoscaling replicas for the read
     maxReplicas: 2
     # -- Target CPU utilisation percentage for the read
@@ -283,14 +372,14 @@ read:
     # If set to "-", storageClassName: "", which disables dynamic provisioning.
     # If empty or set to null, no storageClassName spec is
     # set, choosing the default provisioner (gp2 on AWS, standard on GKE, AWS, and OpenStack).
-    storageClass: "-"
+    storageClass: null
 
 # Configuration for the gateway
 gateway:
   # -- Specifies whether the gateway should be enabled
   enabled: true
   # -- Number of replicas for the gateway
-  replicas: 2
+  replicas: 1
   # -- Enable logging of 2xx and 3xx HTTP requests
   verboseLogging: true
   autoscaling:
@@ -299,7 +388,7 @@ gateway:
     # -- Minimum autoscaling replicas for the gateway
     minReplicas: 1
     # -- Maximum autoscaling replicas for the gateway
-    maxReplicas: 3
+    maxReplicas: 1
     # -- Target CPU utilisation percentage for the gateway
     targetCPUUtilizationPercentage: 60
     # -- Target memory utilisation percentage for the gateway
@@ -369,7 +458,7 @@ gateway:
     type: ClusterIP
     # -- ClusterIP of the gateway service
     clusterIP: null
-    # -- Node port if service type is NodePort
+    # -- (int) Node port if service type is NodePort
     nodePort: null
     # -- Load balancer IPO address if service type is LoadBalancer
     loadBalancerIP: null
@@ -377,42 +466,8 @@ gateway:
     annotations: {}
     # -- Labels for gateway service
     labels: {}
-  # Gateway ingress configuration
-  ingress:
-    # -- Specifies whether an ingress for the gateway should be created
-    enabled: false
-    # -- Ingress Class Name. MAY be required for Kubernetes versions >= 1.18
-    # ingressClassName: nginx
-    # -- Annotations for the gateway ingress
-    annotations: {}
-    # -- Hosts configuration for the gateway ingress
-    hosts:
-      - host: gateway.loki.example.com
-        paths:
-          - path: /
-            # -- pathType (e.g. ImplementationSpecific, Prefix, .. etc.) might also be required by some Ingress Controllers
-            # pathType: Prefix
-    # -- TLS configuration for the gateway ingress
-    tls:
-      - secretName: loki-gateway-tls
-        hosts:
-          - gateway.loki.example.com
-  # Basic auth configuration
-  basicAuth:
-    # -- Enables basic authentication for the gateway
-    enabled: false
-    # -- The basic auth username for the gateway
-    username: null
-    # -- The basic auth password for the gateway
-    password: null
-    # -- Uses the specified username and password to compute a htpasswd using Sprig's `htpasswd` function.
-    # The value is templated using `tpl`. Override this to use a custom htpasswd, e.g. in case the default causes
-    # high CPU load.
-    htpasswd: >-
-      {{ htpasswd (required "'gateway.basicAuth.username' is required" .Values.gateway.basicAuth.username) (required "'gateway.basicAuth.password' is required" .Values.gateway.basicAuth.password) }}
 
-    # -- Existing basic auth secret to use. Must contain '.htpasswd'
-    existingSecret: null
+
   # Configures the readiness probe for the gateway
   readinessProbe:
     httpGet:

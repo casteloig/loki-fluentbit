@@ -19,3 +19,5 @@ https://github.com/grafana/helm-charts/issues/1111
 20001075
 
 https://rubular.com/r/FnPjaRsyzWC64x
+
+helm repo utilizar X version de chart: --version

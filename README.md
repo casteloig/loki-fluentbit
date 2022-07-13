@@ -1,3 +1,39 @@
+# Commands
+```
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add fluent https://fluent.github.io/helm-charts
+
+helm upgrade --install grafana grafana/grafana -f manifests/grafana-values.yaml --version 6.32.1
+```
+## (Optional) Log generator
+```
+kubectl apply -f manifests/log-generator.yaml
+```
+
+## Install Loki
+### Monolythic
+```
+helm upgrade --install loki grafana/loki -f manifests/loki-simple-values.yaml --version 2.12.2
+```
+
+### Scalable
+You can't use scalable loki and use local filesystem as the block store (deployed with Helm because it does not allow to mofify the `accessMode: ReadWriteOnce`). https://github.com/grafana/helm-charts/issues/1111#issuecomment-1140933791
+```
+TBD
+```
+
+## Install Fluentbit
+### Manifests
+```
+kubectl apply -f manifests/fluent-raw/
+```
+
+### Helm chart
+```
+helm upgrade --install fluent-bit fluent/fluent-bit -f manifests/fluentbit-values.yaml
+```
+
+# Configs
 ## Fluentbit
 The pipeline will go as follows:
 
@@ -244,3 +280,11 @@ persistence:
   size: 10Gi
 ```
 
+### Scalable
+
+* Replication_factor = number of ingesters to write to and read from
+```
+commonConfig:
+  path_prefix: /var/loki
+  replication_factor: 2
+```
