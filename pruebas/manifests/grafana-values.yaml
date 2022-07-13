@@ -59,7 +59,7 @@ livenessProbe:
 image:
   repository: grafana/grafana
   # Overrides the Grafana image tag whose default is the chart appVersion
-  tag: ""
+  tag: "9.0.2"
   sha: ""
   pullPolicy: IfNotPresent
 
@@ -160,7 +160,7 @@ extraContainerVolumes: []
 ##
 persistence:
   type: pvc
-  enabled: true
+  enabled: false
   # storageClassName: default
   accessModes:
     - ReadWriteOnce
