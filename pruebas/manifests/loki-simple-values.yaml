@@ -126,7 +126,7 @@ persistence:
   #     app.kubernetes.io/name: loki
   # subPath: ""
   existingClaim: loki-pvc
-  storageClassName: loki-pvc
+  storageClassName: local-path
 
 ## Pod Labels
 podLabels:
@@ -163,10 +163,10 @@ resources: {}
 #   memory: 128Mi
 
 securityContext:
-  fsGroup: 0
-  runAsGroup: 0
-  runAsNonRoot: false
-  runAsUser: 0
+  fsGroup: 10001
+  runAsGroup: 10001
+  runAsNonRoot: true
+  runAsUser: 10001
 
 containerSecurityContext:
   readOnlyRootFilesystem: true

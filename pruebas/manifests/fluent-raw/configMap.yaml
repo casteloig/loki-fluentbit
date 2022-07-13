@@ -63,9 +63,10 @@ data:
         Port                   ${FLUENT_LOKI_PORT}
         auto_kubernetes_labels Off
         net.connect_timeout    120
-        # net.keepalive          on
-        # net.keepalive_idle_timeout 300
-        # net.keepalive_max_recycle 10000
+        #net.keepalive          on
+        #net.keepalive_idle_timeout 300
+        #net.keepalive_max_recycle 10000
+        #Retry_Limit false
 
   parsers.conf: |
     [PARSER]
@@ -82,4 +83,7 @@ data:
         Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
         Time_Key    time
         Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3df54a7b0af7277f5f30b3789bb36bcc8164ef7c
