@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: log-generator
   labels:
-    app: log-generator
+    k8s-app: log-generator
 spec:
   replicas: 2
   selector:

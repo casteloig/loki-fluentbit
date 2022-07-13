@@ -1,0 +1,1 @@
+fluentbit with manifests instead of helm deployment, for testing purposes.

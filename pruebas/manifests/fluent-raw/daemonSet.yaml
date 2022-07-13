@@ -30,8 +30,6 @@ spec:
             value: "loki"
           - name: FLUENT_LOKI_PORT
             value: "3100"
-          - name: FLUENT_LOKI_AUTO_KUBERNETES_LABELS
-            value: "true"
         volumeMounts:
         - name: varlog
           mountPath: /var/log

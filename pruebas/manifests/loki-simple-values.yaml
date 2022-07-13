@@ -36,6 +36,7 @@ config:
       - '{{ include "loki.fullname" . }}-memberlist'
 
   ingester:
+    max_chunk_age: 4h
     chunk_idle_period: 3m
     chunk_block_size: 262144
     chunk_retain_period: 1m
@@ -60,14 +61,15 @@ config:
     reject_old_samples: true
     reject_old_samples_max_age: 168h
     max_entries_limit_per_query: 5000
+    retention_period: 744h #30d
   schema_config:
     configs:
-    - from: 2020-10-24
+    - from: 2020-05-01
       store: boltdb-shipper
       object_store: filesystem
       schema: v11
       index:
-        prefix: index_
+        prefix: loki_index_
         period: 24h
   server:
     http_listen_port: 3100
@@ -81,13 +83,14 @@ config:
     filesystem:
       directory: /data/loki/chunks
   chunk_store_config:
-    max_look_back_period: 0s
-  table_manager:
-    retention_deletes_enabled: false
-    retention_period: 0s
+    max_look_back_period: 0s # Controls the max point where loki will actually perform queries
   compactor:
     working_directory: /data/loki/boltdb-shipper-compactor
     shared_store: filesystem
+    compaction_interval: 10m 
+    retention_enabled: true
+    retention_delete_delay: 2h
+    retention_delete_worker_count: 150
 
 
 ## Additional Loki container arguments, e.g. log level (debug, info, warn, error)
@@ -122,11 +125,12 @@ persistence:
   #   matchLabels:
   #     app.kubernetes.io/name: loki
   # subPath: ""
-  # existingClaim:
-  # storageClassName:
+  existingClaim: loki-pvc
+  storageClassName: loki-pvc
 
 ## Pod Labels
-podLabels: {}
+podLabels:
+  k8s-app: loki
 
 ## Pod Annotations
 podAnnotations:
@@ -159,10 +163,10 @@ resources: {}
 #   memory: 128Mi
 
 securityContext:
-  fsGroup: 10001
-  runAsGroup: 10001
-  runAsNonRoot: true
-  runAsUser: 10001
+  fsGroup: 0
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0
 
 containerSecurityContext:
   readOnlyRootFilesystem: true
