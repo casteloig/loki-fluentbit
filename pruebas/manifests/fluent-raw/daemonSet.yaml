@@ -27,9 +27,9 @@ spec:
           - containerPort: 2020
         env:
           - name: FLUENT_LOKI_HOST
-            value: "loki"
+            value: "loki-gateway"
           - name: FLUENT_LOKI_PORT
-            value: "3100"
+            value: "80"
         volumeMounts:
         - name: varlog
           mountPath: /var/log

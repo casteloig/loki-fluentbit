@@ -11,7 +11,7 @@ kubectl apply -f manifests/log-generator.yaml
 ```
 
 ## Install Loki
-### Monolythic
+### Monolithic
 ```
 helm upgrade --install loki grafana/loki -f manifests/loki-simple-values.yaml --version 2.12.2
 ```

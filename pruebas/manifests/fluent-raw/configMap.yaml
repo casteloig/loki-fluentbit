@@ -34,11 +34,11 @@ data:
         Parser            docker
         Path              /var/log/containers/*.log
         DB                /var/log/flb_kube.db
-        Mem_Buf_Limit     8MB
+        Mem_Buf_Limit     5MB
         Skip_Long_Lines   On
         Buffer_Chunk_Size 150KB
         Buffer_Max_Size   150KB
-        Refresh_Interval  20
+        Refresh_Interval  5
         Storage.type      filesystem
 
   filter-kubernetes.conf: |
@@ -83,7 +83,3 @@ data:
         Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
         Time_Key    time
         Time_Format %Y-%m-%dT%H:%M:%S.%L%z
-<<<<<<< HEAD
-
-=======
->>>>>>> 3df54a7b0af7277f5f30b3789bb36bcc8164ef7c
