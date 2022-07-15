@@ -71,20 +71,25 @@ loki:
           region: eu-west-1
           s3: s3://optare-loki-test
           s3forcepathstyle: true
+          http_config:
+            response_header_timeout: 120s
     ingester:
-      max_chunk_age: 1h
-      chunk_idle_period: 10m
+      max_chunk_age: 5m
+      chunk_idle_period: 5m
       chunk_block_size: 262144
-      chunk_retain_period: 10m
+      chunk_retain_period: 5m
     limits_config:
       enforce_metric_name: false
-      max_cache_freshness_per_query: 10m
+      max_cache_freshness_per_query: 1m
       reject_old_samples: true
       reject_old_samples_max_age: 168h
-      split_queries_by_interval: 15m
+      split_queries_by_interval: 10m
     memberlist:
       join_members:
       - loki-memberlist
+    querier:
+      engine:
+        max_look_back_period: 3m
     query_range:
       align_queries_with_step: true
     ruler:
@@ -93,7 +98,7 @@ loki:
           bucketnames: optare-loki-test
     schema_config:
       configs:
-      - from: "2022-01-11"
+      - from: "2022-01-01"
         index:
           period: 24h
           prefix: loki_index_
@@ -103,7 +108,14 @@ loki:
     server:
       grpc_listen_port: 9095
       http_listen_port: 3100
+      http_server_read_timeout: 600s
+      http_server_write_timeout: 600s
     storage_config:
+      boltdb_shipper:
+        active_index_directory: /var/loki/data/loki/boltdb-shipper-active
+        cache_location: /var/loki/data/loki/boltdb-shipper-cache
+        cache_ttl: 24h
+        shared_store: s3
       hedging:
         at: 250ms
         max_per_second: 50

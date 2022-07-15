@@ -271,6 +271,12 @@ config:
   snippets:
     pipelineStages:
       - cri: {}
+      - labeldrop:
+        - stream
+        - namespace
+        - filename
+        - app
+        - container
     common:
       - action: replace
         source_labels:
@@ -311,7 +317,7 @@ config:
           - __meta_kubernetes_pod_annotation_kubernetes_io_config_hash
           - __meta_kubernetes_pod_container_name
         target_label: __path__
-
+        
     # If set to true, adds an additional label for the scrape job.
     # This helps debug the Promtail config.
     addScrapeJobLabel: false
@@ -368,6 +374,7 @@ config:
           {{- with .Values.config.snippets.extraRelabelConfigs }}
           {{- toYaml . | nindent 4 }}
           {{- end }}
+        
 
   # -- Config file contents for Promtail.
   # Must be configured as string.

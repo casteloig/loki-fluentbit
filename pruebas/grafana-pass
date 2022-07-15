@@ -1,6 +1,4 @@
-2wqfiGXWxog5okTWg15B1MHM7DqI1lTqAQXIZQKX
-RwU2jSQ7Ua0193Uf8KqA0DWszdW29ebpfMwateiF
-qgWNg04twJAXLJza6V3IVBQ44C64XhJK1NvbYhJD
+UX22dxoV2xwV3vWHR6aYnhLKOP240CYATuTPUfUC
 
 grafana.monitoring.svc.cluster.local
 
@@ -22,3 +20,72 @@ https://github.com/grafana/helm-charts/issues/1111
 https://rubular.com/r/FnPjaRsyzWC64x
 
 helm repo utilizar X version de chart: --version
+
+
+
+
+boltdb-shipper-active:
+loki_index_19188  uploader
+
+wal:
+00000013               00000014               checkpoint.000012      checkpoint.000013.tmp
+
+
+
+auth_enabled: false
+    common:
+      path_prefix: /var/loki
+      replication_factor: 2
+      storage:
+        s3:
+          bucketnames: optare-loki-test
+          insecure: false
+          region: eu-west-1
+          s3: s3://optare-loki-test
+          s3forcepathstyle: true
+          http_config:
+            response_header_timeout: 120s
+    ingester:
+      max_chunk_age: 5m
+      chunk_idle_period: 5m
+      chunk_block_size: 262144
+      chunk_retain_period: 5m
+    limits_config:
+      enforce_metric_name: false
+      max_cache_freshness_per_query: 1m
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      split_queries_by_interval: 30m
+    memberlist:
+      join_members:
+      - loki-memberlist
+    query_range:
+      align_queries_with_step: true
+    ruler:
+      storage:
+        s3:
+          bucketnames: optare-loki-test
+    schema_config:
+      configs:
+      - from: "2022-01-01"
+        index:
+          period: 24h
+          prefix: loki_index_
+        object_store: s3
+        schema: v12
+        store: boltdb-shipper
+    server:
+      grpc_listen_port: 9095
+      http_listen_port: 3100
+      http_server_read_timeout: 120s
+      http_server_write_timeout: 120s
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /var/loki/data/loki/boltdb-shipper-active
+        cache_location: /var/loki/data/loki/boltdb-shipper-cache
+        cache_ttl: 24h
+        shared_store: s3
+      hedging:
+        at: 250ms
+        max_per_second: 50
+        up_to: 5
