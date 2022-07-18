@@ -88,6 +88,7 @@ loki:
       join_members:
       - loki-memberlist
     querier:
+      query_timeout: 2m
       engine:
         max_look_back_period: 3m
     query_range:
@@ -116,10 +117,6 @@ loki:
         cache_location: /var/loki/data/loki/boltdb-shipper-cache
         cache_ttl: 24h
         shared_store: s3
-      hedging:
-        at: 250ms
-        max_per_second: 50
-        up_to: 5
 
 
   # Should authentication be enabled

@@ -34,6 +34,9 @@ helm upgrade --install fluent-bit fluent/fluent-bit -f manifests/fluentbit-value
 ```
 
 # Configs
+## Promtail
+Promtail is by default configured to work in K8S. No further configuration needed.
+
 ## Fluentbit
 The pipeline will go as follows:
 
@@ -138,7 +141,7 @@ You should use one parser or another depending on which runtime you are using.
 
 
 ## Index and Chunk storing
-Index should be stored usingn boltdb-shipper. 
+Index should be stored using boltdb-shipper. 
 
 Chunks can be stored in filesystem, Cassandra or a cloud system store (S3, GCS).
 
@@ -173,13 +176,11 @@ storage_config:
 ```
 
 ## Retention
-It can be archieved with two different components:
-* Table manager.
-* Compactor.
-
-The single binary no longer supports the Table Manager component from Loki-2.4.0, so it must be archieved with the Compactor.
-
-The object storages - like Amazon S3 and Google Cloud Storage - supported by Loki to store chunks, are not managed by the Table Manager, and a custom bucket policy should be set to delete old data.
+It depends on the loki version: 
+1. Loki scalable: The object storages - like Amazon S3 and Google Cloud Storage - supported by Loki to store chunks, are not managed by the Table Manager. Chunks are stored in S3 (so retention is enabled by default). There must be a bucket policy to delete old chunks in S3.
+2. Loki simple (monolithic): it can be archieved with two different components:
+  * Table manager.
+  * Compactor.
 
 https://grafana.com/docs/loki/latest/operations/storage/table-manager/#retention
 https://grafana.com/docs/loki/latest/operations/storage/retention/
@@ -288,3 +289,75 @@ commonConfig:
   path_prefix: /var/loki
   replication_factor: 2
 ```
+
+
+
+
+
+## Loki configuration
+
+```yaml
+auth_enabled: false
+    common:
+      path_prefix: /var/loki
+      replication_factor: 2
+      storage:
+        s3:
+          bucketnames: optare-loki-test
+          insecure: false
+          region: eu-west-1
+          s3: s3://optare-loki-test
+          s3forcepathstyle: true
+          http_config:
+            response_header_timeout: 120s
+    ingester:
+      max_chunk_age: 1hm
+      chunk_idle_period: 30m
+      chunk_block_size: 262144
+      chunk_retain_period: 1hm
+    limits_config:
+      enforce_metric_name: false
+      max_cache_freshness_per_query: 1m
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      split_queries_by_interval: 10m
+    memberlist:
+      join_members:
+      - loki-memberlist
+    querier:
+      query_timeout: 2m
+      engine:
+        max_look_back_period: 3m
+    query_range:
+      align_queries_with_step: true
+    ruler:
+      storage:
+        s3:
+          bucketnames: optare-loki-test
+    schema_config:
+      configs:
+      - from: "2022-01-01"
+        index:
+          period: 24h
+          prefix: loki_index_
+        object_store: s3
+        schema: v12
+        store: boltdb-shipper
+    server:
+      grpc_listen_port: 9095
+      http_listen_port: 3100
+      http_server_read_timeout: 600s
+      http_server_write_timeout: 600s
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /var/loki/data/loki/boltdb-shipper-active
+        cache_location: /var/loki/data/loki/boltdb-shipper-cache
+        cache_ttl: 24h
+        shared_store: s3
+```
+
+
+
+## Situation
+1. Fluent-bit: standby caused by malfunction with Loki. It cannot reconnect to Loki if it loses his connection.
+2. Loki: 
